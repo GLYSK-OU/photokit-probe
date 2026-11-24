@@ -29,18 +29,19 @@ jobs:
             echo "PhotoKit calls Rust treats as safe (unsafe block flagged as unnecessary):"
             grep -A3 "unnecessary \`unsafe\` block" build.log | grep -E "^\s+--> " | sed -E 's/^\s+--> /  /' || echo "  (none)"
             echo
-            echo "unsafe blocks in src/lib.rs: $(grep -c 'unsafe {' src/lib.rs)"
+            echo "unsafe blocks in src/: $(grep -c 'unsafe {' src/lib.rs src/edit.rs | tr '\\n' ' ')"
           } > unsafe-report.txt
           cat unsafe-report.txt
 
       - name: Package the three variants (ad-hoc signed)
         run: |
           mkdir -p dist/PhotoKitProbe.app/Contents/MacOS
-          cp target/release/photokit-probe target/release/photokit-probe-plist dist/
+          cp target/release/photokit-probe target/release/photokit-probe-plist target/release/photokit-edit dist/
           cp target/release/photokit-probe dist/PhotoKitProbe.app/Contents/MacOS/
           cp app/Info.plist dist/PhotoKitProbe.app/Contents/Info.plist
           codesign --force -s - dist/photokit-probe
           codesign --force -s - dist/photokit-probe-plist
+          codesign --force -s - dist/photokit-edit
           codesign --force -s - dist/PhotoKitProbe.app
           codesign -dv dist/PhotoKitProbe.app 2>&1 | head -5
           otool -s __TEXT __info_plist dist/photokit-probe-plist | head -3

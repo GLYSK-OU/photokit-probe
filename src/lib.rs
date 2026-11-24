@@ -12,6 +12,8 @@
 //! file names. Run it against a test library.
 #![warn(unused_unsafe)]
 
+pub mod edit;
+
 use std::fmt::Write as _;
 use std::sync::mpsc;
 use std::time::Duration;

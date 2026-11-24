@@ -20,8 +20,13 @@ path = "src/bin/plain.rs"
 name = "photokit-probe-plist"
 path = "src/bin/plist.rs"
 
+[[bin]]
+name = "photokit-edit"
+path = "src/bin/edit.rs"
+
 [dependencies]
 objc2 = "0.6"
 objc2-foundation = "0.3"
 objc2-photos = "0.3.2"
 block2 = "0.6"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }

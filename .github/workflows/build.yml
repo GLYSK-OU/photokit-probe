@@ -29,7 +29,7 @@ jobs:
             echo "PhotoKit calls Rust treats as safe (unsafe block flagged as unnecessary):"
             grep -A3 "unnecessary \`unsafe\` block" build.log | grep -E "^\s+--> " | sed -E 's/^\s+--> /  /' || echo "  (none)"
             echo
-            echo "unsafe blocks in src/: $(grep -c 'unsafe {' src/lib.rs src/edit.rs | tr '\\n' ' ')"
+            echo "unsafe blocks: $(cat src/lib.rs src/edit.rs | grep -c 'unsafe {')"
           } > unsafe-report.txt
           cat unsafe-report.txt
 

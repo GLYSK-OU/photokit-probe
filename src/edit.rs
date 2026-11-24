@@ -33,10 +33,8 @@ fn wait<T>(rx: &mpsc::Receiver<T>, secs: u64) -> Option<T> {
         if let Ok(v) = rx.try_recv() {
             return Some(v);
         }
-        unsafe {
-            let until = NSDate::dateWithTimeIntervalSinceNow(0.05);
-            NSRunLoop::currentRunLoop().runUntilDate(&until);
-        }
+        let until = NSDate::dateWithTimeIntervalSinceNow(0.05);
+        NSRunLoop::currentRunLoop().runUntilDate(&until);
         std::thread::sleep(Duration::from_millis(5));
     }
     rx.try_recv().ok()
@@ -167,7 +165,7 @@ fn edit(asset: &Retained<PHAsset>, out: &mut String) -> Result<(), String> {
     });
     let _ = writeln!(out, "saving into Photos (macOS may ask to allow the change)...");
     let library = unsafe { PHPhotoLibrary::sharedPhotoLibrary() };
-    unsafe { library.performChanges_completionHandler(&change, Some(&done)) };
+    unsafe { library.performChanges_completionHandler(RcBlock::as_ptr(&change), Some(&done)) };
     match wait(&rx, 300) {
         Some((true, _)) => Ok(()),
         Some((false, why)) => Err(format!("Photos refused the change: {}", why.unwrap_or_else(|| "no reason given".into()))),

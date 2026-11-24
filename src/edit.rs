@@ -15,10 +15,10 @@ use block2::RcBlock;
 use objc2::rc::Retained;
 use objc2::runtime::Bool;
 use objc2::{AllocAnyThread, Message};
-use objc2_foundation::{NSArray, NSData, NSDate, NSDictionary, NSError, NSRunLoop, NSString};
+use objc2_foundation::{NSArray, NSData, NSDate, NSDictionary, NSError, NSRunLoop, NSString, NSURL};
 use objc2_photos::{
     PHAccessLevel, PHAdjustmentData, PHAsset, PHAssetChangeRequest, PHAssetCollection, PHAssetCollectionSubtype, PHAssetCollectionType,
-    PHAssetMediaType, PHAssetResource, PHAuthorizationStatus, PHContentEditingInput, PHContentEditingInputRequestOptions,
+    PHAssetMediaType, PHAssetResource, PHAssetResourceManager, PHAssetResourceRequestOptions, PHAuthorizationStatus, PHContentEditingInput, PHContentEditingInputRequestOptions,
     PHContentEditingOutput, PHPhotoLibrary,
 };
 
@@ -100,6 +100,44 @@ pub fn describe(asset: &PHAsset) -> String {
         let _ = writeln!(out, "  resource {t} {}: {name} ({uti})", resource_type(t));
     }
     out
+}
+
+/// Copy the asset's adjustment recipe (Adjustments.plist) out of Photos and show it: it names the
+/// format, the editing app and the time of the edit, so we can tell whose edit is current.
+fn dump_adjustments(asset: &PHAsset, out: &mut String) {
+    let resources = unsafe { PHAssetResource::assetResourcesForAsset(asset) };
+    let Some(r) = resources.iter().find(|r| unsafe { r.r#type() }.0 == 7) else {
+        let _ = writeln!(out, "  no adjustment recipe");
+        return;
+    };
+    let path = format!("/tmp/photokit-adjustments-{}.plist", std::process::id());
+    let _ = std::fs::remove_file(&path);
+    let url = NSURL::fileURLWithPath(&NSString::from_str(&path));
+    let options = unsafe { PHAssetResourceRequestOptions::new() };
+    unsafe { options.setNetworkAccessAllowed(true) };
+    let (tx, rx) = mpsc::channel::<Option<String>>();
+    let done = RcBlock::new(move |err: *mut NSError| {
+        let _ = tx.send(unsafe { err.as_ref() }.map(|e| e.localizedDescription().to_string()));
+    });
+    unsafe { PHAssetResourceManager::defaultManager().writeDataForAssetResource_toFile_options_completionHandler(&r, &url, Some(&options), &done) };
+    match wait(&rx, 60) {
+        Some(None) => {
+            let shown = std::process::Command::new("/usr/bin/plutil").args(["-p", &path]).output();
+            let text = shown.map(|o| String::from_utf8_lossy(&o.stdout).into_owned()).unwrap_or_default();
+            let _ = writeln!(out, "  adjustment recipe:");
+            for line in text.lines().take(20) {
+                let line: String = line.chars().take(160).collect();
+                let _ = writeln!(out, "    {line}");
+            }
+        }
+        Some(Some(why)) => {
+            let _ = writeln!(out, "  can't read the recipe: {why}");
+        }
+        None => {
+            let _ = writeln!(out, "  no answer reading the recipe");
+        }
+    }
+    let _ = std::fs::remove_file(&path);
 }
 
 fn ensure_access(out: &mut String) -> bool {
@@ -187,6 +225,9 @@ pub fn run(args: &[String]) {
             }
             Ok(asset) => {
                 let _ = writeln!(out, "before:\n{}", describe(&asset));
+                if cmd == "inspect" {
+                    dump_adjustments(&asset, &mut out);
+                }
                 if cmd == "edit" {
                     let id = unsafe { asset.localIdentifier() }.to_string();
                     match edit(&asset, &mut out) {

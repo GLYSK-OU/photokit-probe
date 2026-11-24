@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>eu.glysk.photokit-probe.cli</string>
+	<key>CFBundleName</key>
+	<string>photokit-probe</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>photokit-probe reads album names and photo details to test reading Apple Photos from LightCraft. It changes nothing.</string>
+</dict>
+</plist>

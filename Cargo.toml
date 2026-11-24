@@ -1,0 +1,27 @@
+[package]
+name = "photokit-probe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Read-only probe of Apple Photos through PhotoKit from pure Rust (objc2-photos), for LightCraft issue #1622"
+license = "MIT OR Apache-2.0"
+
+[lib]
+path = "src/lib.rs"
+
+# The same probe twice: `photokit-probe` as a plain command-line tool, and
+# `photokit-probe-plist` with an Info.plist (NSPhotoLibraryUsageDescription) embedded in the
+# binary's __TEXT,__info_plist section (build.rs). The .app bundle wraps the plain one.
+[[bin]]
+name = "photokit-probe"
+path = "src/bin/plain.rs"
+
+[[bin]]
+name = "photokit-probe-plist"
+path = "src/bin/plist.rs"
+
+[dependencies]
+objc2 = "0.6"
+objc2-foundation = "0.3"
+objc2-photos = "0.3.2"
+block2 = "0.6"
